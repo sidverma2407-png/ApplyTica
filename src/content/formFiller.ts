@@ -29,8 +29,10 @@ export const fillForms = (mappings: MappingResult[]): { filledCount: number, rev
         let matched = false;
         for (let i = 0; i < select.options.length; i++) {
           const opt = select.options[i];
-          if (opt.text.toLowerCase().includes(mapping.mappedValue.toLowerCase()) || 
-              opt.value.toLowerCase().includes(mapping.mappedValue.toLowerCase())) {
+          if (
+            (opt.value && mapping.mappedValue.toLowerCase().includes(opt.value.toLowerCase())) ||
+            (opt.text && mapping.mappedValue.toLowerCase().includes(opt.text.toLowerCase().replace(/['"']/g, '')))
+          ) {
             select.selectedIndex = i;
             matched = true;
             break;

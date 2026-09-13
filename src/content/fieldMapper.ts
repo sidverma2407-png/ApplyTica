@@ -44,14 +44,21 @@ export const mapFields = (fields: DetectedField[], profile: UserProfile): Mappin
       mappedKey = 'portfolio';
       mappedValue = profile.portfolio;
       confidence = 'high';
-    } else if (s.includes('school') || s.includes('university') || s.includes('college')) {
+    } else if (s.includes('school') || s.includes('university') || s.includes('college') || s.includes('degree')) {
       mappedKey = 'education';
-      // High risk of wrong mapping for textareas vs inputs, so mark as low
       mappedValue = profile.education;
-      confidence = 'low';
-    } else if (s.includes('company') || s.includes('employer')) {
+      confidence = 'low'; // low because dropdowns or large textareas are complex
+    } else if (s.includes('company') || s.includes('employer') || s.includes('experience')) {
       mappedKey = 'workExperience';
       mappedValue = profile.workExperience;
+      confidence = 'low';
+    } else if (s.includes('skill') || s.includes('technologies')) {
+      mappedKey = 'skills';
+      mappedValue = profile.skills;
+      confidence = 'low';
+    } else if (s.includes('project')) {
+      mappedKey = 'projects';
+      mappedValue = profile.projects;
       confidence = 'low';
     }
 
