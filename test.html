@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Applytica Test Form</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+        .field { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input, select, textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { padding: 10px 15px; background: #007bff; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>Job Application Form</h2>
+    <form id="jobForm" onsubmit="event.preventDefault(); alert('Form submitted!');">
+        <!-- Direct match with ID and Label -->
+        <div class="field">
+            <label for="firstName">First Name</label>
+            <input type="text" id="firstName" name="first_name" autocomplete="given-name">
+        </div>
+        
+        <!-- Placeholder and name only, no id -->
+        <div class="field">
+            <label>Last Name</label>
+            <input type="text" name="lname" placeholder="Enter your last name" autocomplete="family-name">
+        </div>
+        
+        <!-- Ambiguous Name -->
+        <div class="field">
+            <label for="fname">Full Name</label>
+            <input type="text" id="fname" name="fullName">
+        </div>
+        
+        <!-- Email with aria-label -->
+        <div class="field">
+            <label for="emailAddr">Email</label>
+            <input type="email" id="emailAddr" aria-label="Email Address">
+        </div>
+        
+        <!-- Phone with name only -->
+        <div class="field">
+            <label>Mobile Number</label>
+            <input type="tel" name="phone">
+        </div>
+
+        <!-- Location with ambiguous label -->
+        <div class="field">
+            <label for="loc">Where are you based?</label>
+            <input type="text" id="loc" name="city">
+        </div>
+        
+        <!-- Links -->
+        <div class="field">
+            <label for="linkedinProfile">LinkedIn URL</label>
+            <input type="url" id="linkedinProfile">
+        </div>
+        <div class="field">
+            <label for="github_link">GitHub URL</label>
+            <input type="url" id="github_link">
+        </div>
+        <div class="field">
+            <label for="website">Portfolio URL</label>
+            <input type="url" id="website" placeholder="https://...">
+        </div>
+        
+        <!-- Education -->
+        <div class="field">
+            <label for="uni">University</label>
+            <input type="text" id="uni" name="school">
+        </div>
+        
+        <!-- Dropdown for degree -->
+        <div class="field">
+            <label for="degreeType">Degree</label>
+            <select id="degreeType" name="degree">
+                <option value="">Select Degree</option>
+                <option value="bachelors">Bachelor's</option>
+                <option value="masters">Master's</option>
+                <option value="phd">Ph.D.</option>
+            </select>
+        </div>
+
+        <!-- Textareas -->
+        <div class="field">
+            <label for="skills_input">Skills</label>
+            <textarea id="skills_input" name="technologies" rows="3"></textarea>
+        </div>
+        <div class="field">
+            <label for="exp">Work Experience</label>
+            <textarea id="exp" name="experience" rows="4"></textarea>
+        </div>
+        <div class="field">
+            <label for="projects">Projects</label>
+            <textarea id="projects" name="project_list" rows="3"></textarea>
+        </div>
+        
+        <!-- Pre-filled field -->
+        <div class="field">
+            <label for="coverLetter">Cover Letter</label>
+            <textarea id="coverLetter" name="cover_letter" rows="4">I am very interested in this role.</textarea>
+        </div>
+        
+        <!-- Ambiguous field (should have low/none confidence) -->
+        <div class="field">
+            <label for="ambiguous1">Tell us more</label>
+            <input type="text" id="ambiguous1" name="misc">
+        </div>
+
+        <button type="submit" id="submitBtn">Submit Application</button>
+    </form>
+    <script>
+        // Setup simple React-like interceptor test
+        document.querySelectorAll('input, textarea, select').forEach(el => {
+            el.addEventListener('change', (e) => {
+                console.log('Change detected on:', e.target.id || e.target.name, 'Value:', e.target.value);
+            });
+        });
+    </script>
+</body>
+</html>
