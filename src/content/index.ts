@@ -17,7 +17,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     const mappings = mapFields(fields, profile);
     
     console.log('Applytica detected and mapped fields:', mappings);
-    sendResponse({ success: true, mappings });
+    sendResponse({ success: true, mappings, fields });
   } 
   else if (request.type === 'FILL_FORM') {
     const mappings = request.mappings as MappingResult[];

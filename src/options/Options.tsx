@@ -1,27 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LayoutDashboard, User, FileText, Settings, Sparkles, UploadCloud, Trash2, Check, AlertCircle } from 'lucide-react';
 import type { UserProfile } from '../types';
-import { getProfile, saveProfile } from '../utils/storage';
+import { getProfile, saveProfile, getApiKey, saveApiKey } from '../utils/storage';
 import { extractTextFromFile, parseProfileFromText, calculateCompletion } from '../utils/parser';
+import { parseResumeWithGemini } from '../utils/ai';
 
 type Tab = 'dashboard' | 'profile' | 'resume' | 'settings';
 
 const Options: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [profile, setProfile] = useState<Partial<UserProfile>>({});
+  const [apiKey, setApiKey] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    loadProfile();
+    getProfile().then(p => setProfile(p || {}));
+    getApiKey().then(k => setApiKey(k || ''));
   }, []);
-
-  const loadProfile = async () => {
-    const p = await getProfile();
-    if (p) setProfile(p);
-  };
 
   const handleSaveProfile = async () => {
     const updatedProfile = { 
@@ -34,6 +32,12 @@ const Options: React.FC = () => {
     setProfile(updatedProfile);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
+  };
+
+  const handleSaveApiKey = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setApiKey(val);
+    await saveApiKey(val);
   };
 
   const handleClearProfile = async () => {
@@ -53,7 +57,13 @@ const Options: React.FC = () => {
 
     try {
       const text = await extractTextFromFile(file);
-      const parsedData = parseProfileFromText(text);
+      let parsedData;
+      
+      if (apiKey && apiKey.trim().length > 0) {
+        parsedData = await parseResumeWithGemini(text, apiKey);
+      } else {
+        parsedData = parseProfileFromText(text);
+      }
       
       const mergedProfile = { ...profile, ...parsedData };
       setProfile(mergedProfile);
@@ -263,7 +273,9 @@ const Options: React.FC = () => {
                   {isUploading ? (
                     <div className="animate-pulse">
                       <Sparkles className="w-16 h-16 text-blue-500 mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Analyzing Resume...</h3>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        {apiKey && apiKey.trim().length > 0 ? 'AI is analyzing your resume...' : 'Analyzing Resume...'}
+                      </h3>
                       <p className="text-gray-500">Extracting your profile information.</p>
                     </div>
                   ) : (
@@ -298,7 +310,7 @@ const Options: React.FC = () => {
               <h2 className="text-3xl font-bold text-gray-900 mb-6">Settings</h2>
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
                 <h3 className="text-lg font-medium text-gray-900 border-b pb-4 mb-4">Extension Preferences</h3>
-                <div className="space-y-4">
+                <div className="space-y-4 mb-8">
                   <label className="flex items-center gap-3">
                     <input type="checkbox" className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
                     <span className="text-gray-700">Show floating button on job boards</span>
@@ -307,6 +319,21 @@ const Options: React.FC = () => {
                     <input type="checkbox" className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
                     <span className="text-gray-700">Auto-detect application forms</span>
                   </label>
+                </div>
+
+                <h3 className="text-lg font-medium text-gray-900 border-b pb-4 mb-4">AI Configuration</h3>
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-500 mb-2">Provide a Gemini API Key to enable perfectly accurate resume extraction and highly intelligent form field mapping.</p>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Gemini API Key</label>
+                    <input 
+                      type="password" 
+                      value={apiKey} 
+                      onChange={handleSaveApiKey} 
+                      placeholder="AIzaSy..." 
+                      className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none max-w-md" 
+                    />
+                  </div>
                 </div>
               </div>
             </div>

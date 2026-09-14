@@ -1,21 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, Settings, ExternalLink, CheckCircle2, ChevronRight, AlertTriangle } from 'lucide-react';
+import { getProfile, getApiKey } from '../utils/storage';
+import { mapFieldsWithGemini } from '../utils/ai';
 import type { UserProfile, MappingResult } from '../types';
-import { getProfile } from '../utils/storage';
-import { Settings, Sparkles, ExternalLink, CheckCircle2, AlertTriangle, ChevronRight } from 'lucide-react';
 
 type PopupState = 'idle' | 'scanning' | 'preview' | 'filling' | 'done';
 
 const Popup: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [apiKey, setApiKey] = useState<string>('');
   const [appState, setAppState] = useState<PopupState>('idle');
   const [mappings, setMappings] = useState<MappingResult[]>([]);
   const [fillStats, setFillStats] = useState({ filledCount: 0, reviewCount: 0 });
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    getProfile().then((p) => {
-      setProfile(p);
-    });
+    getProfile().then((p) => setProfile(p));
+    getApiKey().then((k) => setApiKey(k || ''));
   }, []);
 
   const handleScan = async () => {
@@ -30,15 +31,28 @@ const Popup: React.FC = () => {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (tab.id) {
-        chrome.tabs.sendMessage(tab.id, { type: 'SCAN_FORMS', profile }, (response) => {
+        chrome.tabs.sendMessage(tab.id, { type: 'SCAN_FORMS', profile }, async (response) => {
           if (chrome.runtime.lastError) {
             setErrorMsg('Cannot access this page.');
             setAppState('idle');
             return;
           }
-          if (response && response.success && response.mappings) {
-            setMappings(response.mappings);
-            setAppState('preview');
+          if (response && response.success && response.fields && response.fields.length > 0) {
+            try {
+              if (apiKey && apiKey.trim().length > 0) {
+                // Semantic Mapping via AI
+                const aiMappings = await mapFieldsWithGemini(response.fields, profile, apiKey);
+                setMappings(aiMappings);
+              } else {
+                // Fallback to local heuristic mappings
+                setMappings(response.mappings);
+              }
+              setAppState('preview');
+            } catch (err) {
+              console.error("AI Mapping failed:", err);
+              setErrorMsg('AI mapping failed. Check console.');
+              setAppState('idle');
+            }
           } else {
             setErrorMsg('No forms detected.');
             setAppState('idle');

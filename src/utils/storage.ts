@@ -17,3 +17,21 @@ export const saveProfile = async (profile: UserProfile): Promise<void> => {
     });
   });
 };
+
+const API_KEY_KEY = 'applytica_api_key';
+
+export const getApiKey = async (): Promise<string | null> => {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([API_KEY_KEY], (result) => {
+      resolve((result[API_KEY_KEY] as string) || null);
+    });
+  });
+};
+
+export const saveApiKey = async (apiKey: string): Promise<void> => {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ [API_KEY_KEY]: apiKey }, () => {
+      resolve();
+    });
+  });
+};
