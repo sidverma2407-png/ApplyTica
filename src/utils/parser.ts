@@ -1,9 +1,12 @@
 import * as pdfjsLib from 'pdfjs-dist';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url';
 import mammoth from 'mammoth';
 import type { UserProfile } from '../types';
 
-// Setup pdf.js worker using standard URL (since it's an extension, we might need to bundle it in real production, but for now we use local if possible or let Vite handle it)
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.mjs`;
+// Setup pdf.js worker using standard URL (bundled locally by Vite for Manifest V3)
+if (typeof window !== 'undefined' && 'document' in window) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+}
 
 export const extractTextFromFile = async (file: File): Promise<string> => {
   const arrayBuffer = await file.arrayBuffer();
@@ -21,22 +24,34 @@ export const extractTextFromFile = async (file: File): Promise<string> => {
 };
 
 const extractTextFromPdf = async (arrayBuffer: ArrayBuffer): Promise<string> => {
+  console.log('Initializing PDF parsing task...');
+  let pdf;
   try {
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = '';
-    
-    for (let i = 1; i <= pdf.numPages; i++) {
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    pdf = await loadingTask.promise;
+    console.log(`PDF loaded successfully. Total pages: ${pdf.numPages}`);
+  } catch (error) {
+    console.error('Error loading PDF document:', error);
+    throw new Error('Failed to load PDF document.');
+  }
+
+  let fullText = '';
+  
+  for (let i = 1; i <= pdf.numPages; i++) {
+    try {
+      console.log(`Extracting page ${i}...`);
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
       const strings = content.items.map((item: any) => item.str);
       fullText += strings.join(' ') + '\n';
+    } catch (error) {
+      console.error(`Error extracting text from page ${i}:`, error);
+      throw new Error(`Failed to extract text from PDF page ${i}.`);
     }
-    
-    return fullText;
-  } catch (error) {
-    console.error('Error parsing PDF:', error);
-    throw new Error('Failed to parse PDF file.');
   }
+  
+  console.log('PDF text extraction complete.');
+  return fullText;
 };
 
 const extractTextFromDocx = async (arrayBuffer: ArrayBuffer): Promise<string> => {
